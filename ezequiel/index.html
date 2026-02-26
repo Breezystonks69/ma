@@ -1,78 +1,1520 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>M&A Hub Paraguay</title>
-  <script>
-    (function() {
-      const originalWarn = console.warn;
-      console.warn = function(msg) {
-        if (typeof msg === 'string' && msg.includes('cdn.tailwindcss.com')) return;
-        originalWarn.apply(console, arguments);
-      };
-    })();
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .tab { display: none; }
-    .tab-active { display: block; }
-    .card { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
-    .card:hover { transform: translateY(-3px); }
-    .modal { animation: fadeIn 0.2s; }
-    @keyframes fadeIn { from {opacity:0;} to {opacity:1;} }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ValorPY — Valuación Empresarial</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111318;
+    --surface2: #181c23;
+    --border: #1e2430;
+    --gold: #c9a84c;
+    --gold-light: #e8c96a;
+    --gold-dim: #7a6230;
+    --text: #e8e6e0;
+    --text-dim: #6b7280;
+    --text-mid: #9ca3af;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #60a5fa;
+    --accent: #c9a84c;
+    --card-shadow: 0 4px 32px rgba(0,0,0,0.5);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events:none;
+    z-index:0;
+    opacity:0.4;
+  }
+
+  /* Header */
+  header {
+    position:sticky; top:0; z-index:100;
+    background: rgba(10,12,15,0.92);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display:flex; align-items:center; justify-content:space-between;
+    height: 64px;
+  }
+
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-weight: 900;
+    font-size: 1.4rem;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+  }
+  .logo span { color: var(--text-dim); font-weight: 400; font-size: 0.8rem; margin-left: 8px; vertical-align: middle; }
+
+  .header-right { display:flex; align-items:center; gap: 1.5rem; }
+
+  /* Exchange rate badge */
+  .rate-badge {
+    display:flex; align-items:center; gap: 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+  }
+  .rate-dot { width:7px; height:7px; border-radius:50%; background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .rate-label { color: var(--text-dim); }
+  .rate-value { color: var(--gold); font-weight: 500; }
+
+  /* Currency toggle */
+  .currency-toggle {
+    display:flex; align-items:center; gap:0;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .currency-btn {
+    padding: 7px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .currency-btn.active {
+    background: var(--gold);
+    color: #000;
+  }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 5rem 2rem 3rem;
+    position:relative; z-index:1;
+  }
+  .hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+  .hero h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.5rem, 6vw, 4.5rem);
+    font-weight: 900;
+    line-height: 1.05;
+    color: var(--text);
+    margin-bottom: 1rem;
+  }
+  .hero h1 em { color: var(--gold); font-style: normal; }
+  .hero p {
+    color: var(--text-mid);
+    font-size: 1.05rem;
+    max-width: 520px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* Method tabs */
+  .tabs-wrapper {
+    position: sticky;
+    top: 64px;
+    z-index: 90;
+    background: rgba(10,12,15,0.9);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabs-wrapper::-webkit-scrollbar { display:none; }
+  .tabs {
+    display:flex;
+    padding: 0 2rem;
+    gap: 0;
+    white-space: nowrap;
+  }
+  .tab-btn {
+    padding: 14px 20px;
+    border: none;
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    position:relative;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+  .tab-btn .tab-cat {
+    display:block;
+    font-size: 0.62rem;
+    font-family: 'DM Mono', monospace;
+    color: inherit;
+    opacity: 0.6;
+    margin-bottom: 1px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* Main content */
+  .main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 6rem;
+    position:relative; z-index:1;
+  }
+
+  /* Sections */
+  .section { display: none; }
+  .section.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--card-shadow);
+  }
+  .card-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  .card-desc {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin-bottom: 1.8rem;
+    font-weight: 300;
+  }
+  .card-desc a { color: var(--gold); text-decoration: none; }
+
+  /* Form grid */
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .form-grid.cols-2 { grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+  .form-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+
+  .field { display:flex; flex-direction:column; gap: 6px; }
+  .field label {
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .field input, .field select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.88rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--gold-dim);
+  }
+  .field input::placeholder { color: var(--text-dim); opacity:0.5; }
+  .field select option { background: var(--surface2); }
+
+  .hint {
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+
+  /* Button */
+  .btn-calc {
+    background: var(--gold);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 28px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.01em;
+  }
+  .btn-calc:hover { background: var(--gold-light); transform: translateY(-1px); }
+  .btn-calc:active { transform: translateY(0); }
+
+  /* Result box */
+  .result-box {
+    background: linear-gradient(135deg, rgba(201,168,76,0.08), rgba(201,168,76,0.02));
+    border: 1px solid var(--gold-dim);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-top: 1.5rem;
+    display: none;
+  }
+  .result-box.show { display: block; animation: fadeIn 0.3s ease; }
+  .result-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold-dim);
+    margin-bottom: 0.5rem;
+  }
+  .result-value {
+    font-family: 'Playfair Display', serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 0.3rem;
+  }
+  .result-secondary {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--text-dim);
+  }
+  .result-breakdown {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--border);
+    display:grid;
+    gap: 0.4rem;
+  }
+  .breakdown-row {
+    display:flex; justify-content:space-between; align-items:center;
+    font-size: 0.82rem;
+  }
+  .breakdown-key { color: var(--text-dim); font-family:'DM Mono',monospace; font-size: 0.75rem; }
+  .breakdown-val { color: var(--text); font-family:'DM Mono',monospace; font-size: 0.8rem; }
+
+  /* Range inputs for DCF years */
+  .dcf-years-row {
+    display: grid;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+  }
+  .year-row {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    align-items: center;
+    gap: 1rem;
+  }
+  .year-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+  }
+
+  /* Info tip */
+  .info-tip {
+    background: rgba(96,165,250,0.06);
+    border: 1px solid rgba(96,165,250,0.15);
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    font-size: 0.8rem;
+    color: var(--text-mid);
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
+  }
+  .info-tip strong { color: var(--blue); }
+
+  /* Section header */
+  .section-header {
+    margin-bottom: 2rem;
+  }
+  .section-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 0.4rem;
+  }
+  .section-header p {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+    font-weight: 300;
+  }
+
+  /* Multiple results grid */
+  .results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1.5rem;
+  }
+  .result-mini {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem;
+  }
+  .result-mini .label {
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.4rem;
+  }
+  .result-mini .val {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .result-mini .sub {
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+  }
+
+  /* Divider */
+  hr.divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 1.5rem 0;
+  }
+
+  /* Footer */
+  footer {
+    text-align:center;
+    padding: 2rem;
+    color: var(--text-dim);
+    font-size: 0.75rem;
+    border-top: 1px solid var(--border);
+    position:relative; z-index:1;
+    font-family: 'DM Mono', monospace;
+  }
+  footer a { color: var(--gold-dim); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+  @media(max-width:600px) {
+    header { padding: 0 1rem; flex-wrap:wrap; height:auto; padding-top:10px; padding-bottom:10px; gap:8px; }
+    .hero { padding: 3rem 1rem 2rem; }
+    .tabs { padding: 0 1rem; }
+    .main { padding: 1.5rem 1rem 4rem; }
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+    .header-right { flex-wrap: wrap; gap: 8px; }
+  }
+</style>
 </head>
-<body class="bg-zinc-950 text-zinc-100 min-h-screen">
+<body>
 
-  <div class="bg-emerald-900 border-b border-emerald-700 py-3 text-center text-sm flex items-center justify-center gap-3">
-    <span class="text-emerald-300">🇵🇾 BCP Oficial hoy:</span>
-    <span class="font-mono font-semibold">1 USD = 6,453.29 PYG</span>
-    <span class="text-xs text-emerald-400">(25 feb 2026 • Referencial Interbancario)</span>
-    <a href="https://www.bcp.gov.py/webapps/web/cotizacion/monedas" target="_blank" class="underline hover:text-white text-xs ml-2">Ver en BCP →</a>
+<header>
+  <div class="logo">ValorPY <span>Valuación Empresarial</span></div>
+  <div class="header-right">
+    <div class="rate-badge">
+      <div class="rate-dot"></div>
+      <span class="rate-label">BCP HOY:</span>
+      <span class="rate-value" id="rateDisplay">USD 1 = ₲ 6.453,29</span>
+    </div>
+    <div class="currency-toggle">
+      <button class="currency-btn active" id="btnPYG" onclick="setCurrency('PYG')">₲ PYG</button>
+      <button class="currency-btn" id="btnUSD" onclick="setCurrency('USD')">$ USD</button>
+    </div>
   </div>
+</header>
 
-  <nav class="border-b border-zinc-800 bg-zinc-950 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center text-black font-bold text-2xl">🇵🇾</div>
-        <span class="text-3xl font-semibold tracking-tight">M&A Hub Paraguay</span>
+<div class="hero">
+  <div class="hero-eyebrow">Herramienta Profesional · Paraguay</div>
+  <h1>Calculadoras de<br><em>Valuación Empresarial</em></h1>
+  <p>Todos los métodos profesionales para valorar empresas, con conversión automática entre Guaraníes y Dólares según el tipo de cambio oficial del BCP.</p>
+</div>
+
+<div class="tabs-wrapper">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="showSection('dcf', this)">
+      <span class="tab-cat">Flujos</span>DCF
+    </button>
+    <button class="tab-btn" onclick="showSection('ebitda', this)">
+      <span class="tab-cat">Múltiplos</span>EBITDA
+    </button>
+    <button class="tab-btn" onclick="showSection('per', this)">
+      <span class="tab-cat">Múltiplos</span>P/E Ratio
+    </button>
+    <button class="tab-btn" onclick="showSection('revenue', this)">
+      <span class="tab-cat">Múltiplos</span>Ingresos
+    </button>
+    <button class="tab-btn" onclick="showSection('assets', this)">
+      <span class="tab-cat">Activos</span>Valor Libro
+    </button>
+    <button class="tab-btn" onclick="showSection('liquidation', this)">
+      <span class="tab-cat">Activos</span>Liquidación
+    </button>
+    <button class="tab-btn" onclick="showSection('ddm', this)">
+      <span class="tab-cat">Dividendos</span>DDM
+    </button>
+    <button class="tab-btn" onclick="showSection('ev', this)">
+      <span class="tab-cat">Empresa</span>EV/EBITDA
+    </button>
+    <button class="tab-btn" onclick="showSection('vc', this)">
+      <span class="tab-cat">Startup</span>Método VC
+    </button>
+    <button class="tab-btn" onclick="showSection('berkus', this)">
+      <span class="tab-cat">Startup</span>Berkus
+    </button>
+    <button class="tab-btn" onclick="showSection('scorecard', this)">
+      <span class="tab-cat">Startup</span>Scorecard
+    </button>
+    <button class="tab-btn" onclick="showSection('firstchicago', this)">
+      <span class="tab-cat">Híbrido</span>First Chicago
+    </button>
+    <button class="tab-btn" onclick="showSection('summary', this)">
+      <span class="tab-cat">Resumen</span>Multi-Método
+    </button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ===== DCF ===== -->
+  <div class="section active" id="sec-dcf">
+    <div class="section-header">
+      <h2>Flujo de Caja Descontado (DCF)</h2>
+      <p>El método más robusto. Descuenta flujos de caja futuros proyectados a valor presente usando la tasa WACC.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Proyección de Flujos</div>
+      <div class="card-desc">Ingrese el flujo de caja libre (FCL) proyectado para cada año y los parámetros de descuento.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> VPN = Σ [FCL_t / (1+WACC)^t] + [Valor Terminal / (1+WACC)^n] <br>
+        Valor Terminal = FCL_n × (1+g) / (WACC − g)
       </div>
-      <div class="flex items-center gap-8">
-        <div class="flex gap-8 text-sm font-medium">
-          <button onclick="switchTab(0)" class="nav-btn text-emerald-400">Inicio</button>
-          <button onclick="switchTab(1)" class="nav-btn">Valoración</button>
-          <button onclick="switchTab(2)" class="nav-btn">Pipeline</button>
-          <button onclick="switchTab(3)" class="nav-btn">DD Checklist</button>
-          <button onclick="switchTab(4)" class="nav-btn">Comps</button>
-          <button onclick="switchTab(5)" class="nav-btn">Recursos PY</button>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label>WACC (%)</label>
+          <input type="number" id="dcf_wacc" value="12" step="0.1" placeholder="12">
+          <span class="hint">Costo promedio ponderado de capital</span>
         </div>
-        <div class="flex items-center bg-zinc-900 border border-zinc-700 rounded-3xl p-1 text-sm">
-          <button onclick="setCurrency('USD')" id="btn-usd" class="px-6 py-2.5 rounded-3xl font-medium bg-emerald-500 text-black">USD</button>
-          <button onclick="setCurrency('PYG')" id="btn-pyg" class="px-6 py-2.5 rounded-3xl font-medium">PYG</button>
+        <div class="field">
+          <label>Tasa de Crecimiento Terminal (g%)</label>
+          <input type="number" id="dcf_g" value="3" step="0.1" placeholder="3">
+          <span class="hint">Crecimiento perpetuo estimado</span>
         </div>
+        <div class="field">
+          <label>Años de Proyección</label>
+          <select id="dcf_years" onchange="renderDCFYears()">
+            <option value="5" selected>5 años</option>
+            <option value="7">7 años</option>
+            <option value="10">10 años</option>
+          </select>
+        </div>
+      </div>
+      <div id="dcf_year_inputs" class="dcf-years-row"></div>
+      <button class="btn-calc" onclick="calcDCF()">Calcular Valor DCF</button>
+      <div class="result-box" id="res_dcf">
+        <div class="result-label">Valor Presente de la Empresa</div>
+        <div class="result-value" id="dcf_total"></div>
+        <div class="result-secondary" id="dcf_secondary"></div>
+        <div class="result-breakdown" id="dcf_breakdown"></div>
       </div>
     </div>
-  </nav>
-
-  <div class="max-w-7xl mx-auto px-8 py-10">
-    <!-- Tabs as before, with full HTML -->
   </div>
 
-  <script>
-    function switchTab(n) {
-      document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('tab-active'));
-      const tabEl = document.getElementById('tab-' + n);
-      if (tabEl) tabEl.classList.add('tab-active');
-      document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('text-emerald-400'));
-      const activeBtn = document.querySelectorAll('.nav-btn')[n];
-      if (activeBtn) activeBtn.classList.add('text-emerald-400');
-    }
+  <!-- ===== EBITDA ===== -->
+  <div class="section" id="sec-ebitda">
+    <div class="section-header">
+      <h2>Múltiplo de EBITDA</h2>
+      <p>Valúa la empresa como un múltiplo de sus ganancias antes de intereses, impuestos, depreciación y amortización.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuación por EBITDA</div>
+      <div class="card-desc">El método de múltiplos es el más utilizado en transacciones de M&A. Los múltiplos varían por industria (4x–15x es común).</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> Valor Empresa = EBITDA × Múltiplo de la Industria<br>
+        Valor Equity = Valor Empresa − Deuda Neta
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>EBITDA Anual</label>
+          <input type="number" id="ebitda_val" placeholder="500.000.000" step="1000000">
+          <span class="hint" id="ebitda_hint">En guaraníes (₲)</span>
+        </div>
+        <div class="field">
+          <label>Múltiplo de Industria (x)</label>
+          <input type="number" id="ebitda_mult" value="6" step="0.5" placeholder="6">
+          <span class="hint">Ej: Retail 4-6x · Tech 8-15x · Industria 5-8x</span>
+        </div>
+        <div class="field">
+          <label>Deuda Neta</label>
+          <input type="number" id="ebitda_debt" value="0" step="1000000" placeholder="0">
+          <span class="hint">Deuda total − Efectivo y equivalentes</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcEBITDA()">Calcular</button>
+      <div class="result-box" id="res_ebitda">
+        <div class="result-label">Valor del Equity</div>
+        <div class="result-value" id="ebitda_total"></div>
+        <div class="result-secondary" id="ebitda_secondary"></div>
+        <div class="result-breakdown" id="ebitda_breakdown"></div>
+      </div>
+    </div>
+  </div>
 
-    // Rest of the script with all functions defined here...
-  </script>
+  <!-- ===== P/E ===== -->
+  <div class="section" id="sec-per">
+    <div class="section-header">
+      <h2>Ratio Precio / Ganancias (P/E)</h2>
+      <p>Compara el precio de la empresa con sus ganancias netas. Muy usado en empresas cotizadas.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuación P/E Ratio</div>
+      <div class="card-desc">Se estima el valor comparando con empresas similares del sector. P/E promedio en Paraguay ronda 8–15x para empresas medianas.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> Valor Empresa = Ganancia Neta × P/E Ratio
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Ganancia Neta Anual</label>
+          <input type="number" id="per_earnings" placeholder="200.000.000" step="1000000">
+          <span class="hint" id="per_hint">En guaraníes (₲)</span>
+        </div>
+        <div class="field">
+          <label>P/E Ratio de la Industria (x)</label>
+          <input type="number" id="per_ratio" value="10" step="0.5" placeholder="10">
+          <span class="hint">Ej: Servicios 10-18x · Banca 8-12x · Retail 8-14x</span>
+        </div>
+        <div class="field">
+          <label>N° de Acciones Emitidas</label>
+          <input type="number" id="per_shares" placeholder="1000000" step="1000">
+          <span class="hint">Opcional — para calcular precio por acción</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcPER()">Calcular</button>
+      <div class="result-box" id="res_per">
+        <div class="result-label">Valor de la Empresa</div>
+        <div class="result-value" id="per_total"></div>
+        <div class="result-secondary" id="per_secondary"></div>
+        <div class="result-breakdown" id="per_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== REVENUE MULTIPLE ===== -->
+  <div class="section" id="sec-revenue">
+    <div class="section-header">
+      <h2>Múltiplo de Ingresos (Revenue Multiple)</h2>
+      <p>Valuación basada en ventas totales. Ideal para empresas con crecimiento alto pero poca ganancia.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuación por Ingresos</div>
+      <div class="card-desc">Muy usado en startups y empresas de tecnología o SaaS. Los múltiplos van desde 0.5x hasta 20x dependiendo del crecimiento.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> Valor Empresa = Ingresos Anuales × Múltiplo de Ventas
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Ingresos Anuales (Revenue)</label>
+          <input type="number" id="rev_sales" placeholder="2.000.000.000" step="1000000">
+          <span class="hint" id="rev_hint">En guaraníes (₲)</span>
+        </div>
+        <div class="field">
+          <label>Múltiplo de Ingresos (x)</label>
+          <input type="number" id="rev_mult" value="2" step="0.25" placeholder="2">
+          <span class="hint">Ej: SaaS 4-10x · Retail 0.5-1.5x · Servicios 1-3x</span>
+        </div>
+        <div class="field">
+          <label>Margen EBITDA (%)</label>
+          <input type="number" id="rev_margin" value="20" step="1" placeholder="20">
+          <span class="hint">Referencia para validar el múltiplo</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcRevenue()">Calcular</button>
+      <div class="result-box" id="res_revenue">
+        <div class="result-label">Valor de la Empresa</div>
+        <div class="result-value" id="revenue_total"></div>
+        <div class="result-secondary" id="revenue_secondary"></div>
+        <div class="result-breakdown" id="revenue_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== ASSETS ===== -->
+  <div class="section" id="sec-assets">
+    <div class="section-header">
+      <h2>Valor en Libros (Book Value / NAV)</h2>
+      <p>Valuación basada en el patrimonio neto contable de la empresa.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valor Patrimonial Neto</div>
+      <div class="card-desc">Útil para empresas con activos tangibles importantes: inmobiliarias, industrias, agropecuarias. El precio/book ratio ajusta la valuación según rentabilidad.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> Valor Libro = Activos Totales − Pasivos Totales<br>
+        Valor Ajustado = Valor Libro × Precio/Book Ratio
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Activos Totales</label>
+          <input type="number" id="bv_assets" placeholder="5.000.000.000" step="1000000">
+          <span class="hint" id="bv_hint">En guaraníes (₲)</span>
+        </div>
+        <div class="field">
+          <label>Pasivos Totales</label>
+          <input type="number" id="bv_liabilities" placeholder="2.000.000.000" step="1000000">
+        </div>
+        <div class="field">
+          <label>Precio / Book Ratio (x)</label>
+          <input type="number" id="bv_pb" value="1.5" step="0.1" placeholder="1.5">
+          <span class="hint">1x = libro puro · &gt;1x empresa rentable · &lt;1x problemas</span>
+        </div>
+        <div class="field">
+          <label>Ajuste de Activos Intangibles</label>
+          <input type="number" id="bv_intangibles" value="0" step="1000000" placeholder="0">
+          <span class="hint">Marcas, goodwill, patentes a agregar</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcBookValue()">Calcular</button>
+      <div class="result-box" id="res_assets">
+        <div class="result-label">Valor de la Empresa</div>
+        <div class="result-value" id="assets_total"></div>
+        <div class="result-secondary" id="assets_secondary"></div>
+        <div class="result-breakdown" id="assets_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== LIQUIDATION ===== -->
+  <div class="section" id="sec-liquidation">
+    <div class="section-header">
+      <h2>Valor de Liquidación</h2>
+      <p>Valuación del valor mínimo si la empresa cerrara y vendiera todos sus activos.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Liquidación de Activos</div>
+      <div class="card-desc">Representa el "piso" del valor de una empresa. Aplica descuentos de liquidación forzosa sobre cada categoría de activo.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> VL = Σ(Activo × Factor Recupero) − Pasivos Totales − Costos de Liquidación
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Efectivo y Equivalentes</label>
+          <input type="number" id="liq_cash" value="0" step="1000000" placeholder="0">
+          <span class="hint" id="liq_hint">100% recupero</span>
+        </div>
+        <div class="field">
+          <label>Cuentas por Cobrar</label>
+          <input type="number" id="liq_ar" value="0" step="1000000" placeholder="0">
+          <span class="hint">~80% recupero estimado</span>
+        </div>
+        <div class="field">
+          <label>Inventarios</label>
+          <input type="number" id="liq_inv" value="0" step="1000000" placeholder="0">
+          <span class="hint">~50% recupero estimado</span>
+        </div>
+        <div class="field">
+          <label>Activos Fijos (PP&E)</label>
+          <input type="number" id="liq_ppe" value="0" step="1000000" placeholder="0">
+          <span class="hint">~65% recupero estimado</span>
+        </div>
+        <div class="field">
+          <label>Bienes Raíces</label>
+          <input type="number" id="liq_re" value="0" step="1000000" placeholder="0">
+          <span class="hint">~85% recupero estimado</span>
+        </div>
+        <div class="field">
+          <label>Pasivos Totales</label>
+          <input type="number" id="liq_liab" value="0" step="1000000" placeholder="0">
+          <span class="hint">Deuda + Obligaciones</span>
+        </div>
+        <div class="field">
+          <label>Costos de Liquidación (%)</label>
+          <input type="number" id="liq_cost" value="5" step="0.5" placeholder="5">
+          <span class="hint">% sobre activos brutos (~5-10%)</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcLiquidation()">Calcular</button>
+      <div class="result-box" id="res_liquidation">
+        <div class="result-label">Valor de Liquidación Neto</div>
+        <div class="result-value" id="liq_total"></div>
+        <div class="result-secondary" id="liq_secondary"></div>
+        <div class="result-breakdown" id="liq_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== DDM ===== -->
+  <div class="section" id="sec-ddm">
+    <div class="section-header">
+      <h2>Modelo de Descuento de Dividendos (DDM)</h2>
+      <p>Valúa la empresa en función de los dividendos futuros que generará para sus accionistas.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Modelo de Gordon (Crecimiento Constante)</div>
+      <div class="card-desc">Ideal para empresas maduras y estables que pagan dividendos regularmente. Requiere que la tasa de descuento sea mayor a g.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> Valor = D₁ / (Ke − g)<br>
+        Donde D₁ = Dividendo esperado próximo período, Ke = Costo del equity, g = Tasa de crecimiento
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Dividendo Actual (D₀)</label>
+          <input type="number" id="ddm_d0" placeholder="100.000.000" step="1000000">
+          <span class="hint" id="ddm_hint">Dividendo del último período</span>
+        </div>
+        <div class="field">
+          <label>Crecimiento de Dividendos (g%)</label>
+          <input type="number" id="ddm_g" value="4" step="0.1" placeholder="4">
+          <span class="hint">Tasa de crecimiento sostenible</span>
+        </div>
+        <div class="field">
+          <label>Costo del Equity (Ke%)</label>
+          <input type="number" id="ddm_ke" value="12" step="0.1" placeholder="12">
+          <span class="hint">Retorno requerido por accionistas</span>
+        </div>
+        <div class="field">
+          <label>N° de Acciones</label>
+          <input type="number" id="ddm_shares" placeholder="1000000" step="1000">
+          <span class="hint">Para calcular precio por acción</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcDDM()">Calcular</button>
+      <div class="result-box" id="res_ddm">
+        <div class="result-label">Valor de la Empresa (DDM)</div>
+        <div class="result-value" id="ddm_total"></div>
+        <div class="result-secondary" id="ddm_secondary"></div>
+        <div class="result-breakdown" id="ddm_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== EV/EBITDA ===== -->
+  <div class="section" id="sec-ev">
+    <div class="section-header">
+      <h2>Enterprise Value / EBITDA</h2>
+      <p>Calcula el valor total de la empresa (EV) incluyendo deuda y comparándolo con el EBITDA.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Análisis de Enterprise Value</div>
+      <div class="card-desc">El EV es la medida más completa del valor de mercado. Permite comparar empresas con distinta estructura de capital.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> EV = Market Cap + Deuda Total + Interés Minoritario − Efectivo<br>
+        EV/EBITDA = EV / EBITDA → Valor de Empresa = EV/EBITDA_industria × EBITDA
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>EBITDA Anual</label>
+          <input type="number" id="ev_ebitda" placeholder="500.000.000" step="1000000">
+          <span class="hint" id="ev_hint">En guaraníes (₲)</span>
+        </div>
+        <div class="field">
+          <label>Múltiplo EV/EBITDA Industria (x)</label>
+          <input type="number" id="ev_mult" value="7" step="0.5" placeholder="7">
+          <span class="hint">Ej: Industrial 5-9x · Salud 10-15x · Financiero 4-8x</span>
+        </div>
+        <div class="field">
+          <label>Deuda Total</label>
+          <input type="number" id="ev_debt" value="0" step="1000000" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Efectivo y Equivalentes</label>
+          <input type="number" id="ev_cash" value="0" step="1000000" placeholder="0">
+        </div>
+        <div class="field">
+          <label>Acciones en Circulación</label>
+          <input type="number" id="ev_shares" placeholder="1000000" step="1000">
+          <span class="hint">Para precio implícito por acción</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcEV()">Calcular</button>
+      <div class="result-box" id="res_ev">
+        <div class="result-label">Enterprise Value</div>
+        <div class="result-value" id="ev_total"></div>
+        <div class="result-secondary" id="ev_secondary"></div>
+        <div class="result-breakdown" id="ev_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== VC METHOD ===== -->
+  <div class="section" id="sec-vc">
+    <div class="section-header">
+      <h2>Método del Capital de Riesgo (VC Method)</h2>
+      <p>Valuación de startups proyectando una valuación de salida y descontándola por el retorno requerido del inversor.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuación Pre-Money y Post-Money</div>
+      <div class="card-desc">Usado por fondos de VC e inversores ángel. Estima cuánto debería valer la empresa hoy basado en la salida esperada.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> Valor Terminal = Ingresos_Año5 × Múltiplo<br>
+        Valor Pre-Money Hoy = Valor Terminal / (1 + ROI_requerido)^n − Inversión<br>
+        Valor Post-Money = Valor Pre-Money + Inversión
+      </div>
+      <div class="form-grid">
+        <div class="field">
+          <label>Ingresos Proyectados Año 5</label>
+          <input type="number" id="vc_revenue" placeholder="10.000.000.000" step="1000000">
+          <span class="hint" id="vc_hint">En guaraníes (₲)</span>
+        </div>
+        <div class="field">
+          <label>Múltiplo de Salida (x Ingresos)</label>
+          <input type="number" id="vc_exit_mult" value="4" step="0.5" placeholder="4">
+          <span class="hint">P/S múltiplo esperado en la salida</span>
+        </div>
+        <div class="field">
+          <label>ROI Requerido del Inversor (%)</label>
+          <input type="number" id="vc_roi" value="40" step="5" placeholder="40">
+          <span class="hint">Ej: Seed 50-100% · Serie A 30-50% · Serie B 25-35%</span>
+        </div>
+        <div class="field">
+          <label>Horizonte de Inversión (años)</label>
+          <input type="number" id="vc_years" value="5" step="1" placeholder="5">
+        </div>
+        <div class="field">
+          <label>Monto de Inversión</label>
+          <input type="number" id="vc_invest" placeholder="500.000.000" step="1000000">
+          <span class="hint">Capital a invertir en esta ronda</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcVC()">Calcular</button>
+      <div class="result-box" id="res_vc">
+        <div class="result-label">Valor Pre-Money</div>
+        <div class="result-value" id="vc_total"></div>
+        <div class="result-secondary" id="vc_secondary"></div>
+        <div class="result-breakdown" id="vc_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== BERKUS ===== -->
+  <div class="section" id="sec-berkus">
+    <div class="section-header">
+      <h2>Método Berkus</h2>
+      <p>Valoración de startups pre-revenue basada en 5 factores de riesgo clave. Creado por Dave Berkus.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuación por Factores de Valor</div>
+      <div class="card-desc">Cada factor puede agregar hasta un valor máximo definido. La suma total es la valuación pre-money. Ideal para etapa pre-seed o seed.</div>
+      <div class="info-tip">
+        <strong>Máximo por factor:</strong> el techo total sugerido es USD 2.5M (≈ ₲ 16.100M aprox.) para un startup pre-revenue.<br>
+        Adapte los montos máximos a la realidad del mercado paraguayo.
+      </div>
+      <div class="form-grid cols-2">
+        <div class="field">
+          <label>1. Idea / Concepto de Negocio</label>
+          <input type="number" id="bk_idea" value="0" step="1" placeholder="0-20">
+          <span class="hint">Puntuación 0–20 sobre unicidad y viabilidad de la idea</span>
+        </div>
+        <div class="field">
+          <label>2. Prototipo / Producto</label>
+          <input type="number" id="bk_proto" value="0" step="1" placeholder="0-20">
+          <span class="hint">Puntuación 0–20 sobre avance del producto</span>
+        </div>
+        <div class="field">
+          <label>3. Equipo de Gestión</label>
+          <input type="number" id="bk_team" value="0" step="1" placeholder="0-20">
+          <span class="hint">Puntuación 0–20 sobre experiencia y calidad del equipo</span>
+        </div>
+        <div class="field">
+          <label>4. Relaciones Estratégicas</label>
+          <input type="number" id="bk_relations" value="0" step="1" placeholder="0-20">
+          <span class="hint">Puntuación 0–20 sobre partnerships y redes de contactos</span>
+        </div>
+        <div class="field">
+          <label>5. Ventas / Tracción</label>
+          <input type="number" id="bk_sales" value="0" step="1" placeholder="0-20">
+          <span class="hint">Puntuación 0–20 sobre clientes, ingresos iniciales o MoM</span>
+        </div>
+        <div class="field">
+          <label>Valor Máximo Total (Referencia)</label>
+          <input type="number" id="bk_max" value="2500" step="100" placeholder="2500">
+          <span class="hint">En USD — se convertirá a ₲ automáticamente</span>
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcBerkus()">Calcular</button>
+      <div class="result-box" id="res_berkus">
+        <div class="result-label">Valuación Pre-Money (Berkus)</div>
+        <div class="result-value" id="berkus_total"></div>
+        <div class="result-secondary" id="berkus_secondary"></div>
+        <div class="result-breakdown" id="berkus_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SCORECARD ===== -->
+  <div class="section" id="sec-scorecard">
+    <div class="section-header">
+      <h2>Método Scorecard</h2>
+      <p>Compara el startup con una valuación pre-money promedio ajustada por factores cualitativos ponderados.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuación por Comparables Ajustados</div>
+      <div class="card-desc">Toma una valuación base de mercado y la ajusta multiplicando por factores relativos a empresas comparables. Usado por ángeles inversores.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> Valor = Valuación_Base × Σ(Peso_i × Factor_i)<br>
+        Factor &gt; 1 = mejor que promedio · Factor &lt; 1 = peor que promedio
+      </div>
+      <div class="form-grid cols-2">
+        <div class="field">
+          <label>Valuación Base de Mercado</label>
+          <input type="number" id="sc_base" placeholder="3.000.000.000" step="100000000">
+          <span class="hint" id="sc_hint">Promedio de startups similares en ₲</span>
+        </div>
+      </div>
+      <hr class="divider">
+      <div class="form-grid cols-2">
+        <div class="field">
+          <label>Fuerza del Equipo (peso 30%) — Factor</label>
+          <input type="number" id="sc_team" value="1.0" step="0.05" placeholder="1.0">
+          <span class="hint">0.5 = débil · 1.0 = promedio · 1.5 = excepcional</span>
+        </div>
+        <div class="field">
+          <label>Tamaño del Mercado (peso 25%) — Factor</label>
+          <input type="number" id="sc_market" value="1.0" step="0.05" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label>Producto/Tecnología (peso 15%) — Factor</label>
+          <input type="number" id="sc_product" value="1.0" step="0.05" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label>Entorno Competitivo (peso 10%) — Factor</label>
+          <input type="number" id="sc_comp" value="1.0" step="0.05" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label>Marketing/Canales (peso 10%) — Factor</label>
+          <input type="number" id="sc_mkt" value="1.0" step="0.05" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label>Necesidad de Inversión Adicional (peso 5%) — Factor</label>
+          <input type="number" id="sc_need" value="1.0" step="0.05" placeholder="1.0">
+        </div>
+        <div class="field">
+          <label>Otros Factores (peso 5%) — Factor</label>
+          <input type="number" id="sc_other" value="1.0" step="0.05" placeholder="1.0">
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcScorecard()">Calcular</button>
+      <div class="result-box" id="res_scorecard">
+        <div class="result-label">Valuación Ajustada (Scorecard)</div>
+        <div class="result-value" id="scorecard_total"></div>
+        <div class="result-secondary" id="scorecard_secondary"></div>
+        <div class="result-breakdown" id="scorecard_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== FIRST CHICAGO ===== -->
+  <div class="section" id="sec-firstchicago">
+    <div class="section-header">
+      <h2>Método First Chicago</h2>
+      <p>Pondera tres escenarios (pesimista, base, optimista) con probabilidades asignadas.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuación por Escenarios Ponderados</div>
+      <div class="card-desc">Originado en el First National Bank of Chicago. Reduce el riesgo de sesgo hacia un único escenario. Las probabilidades deben sumar 100%.</div>
+      <div class="info-tip">
+        <strong>Fórmula:</strong> Valor = (P_pesimista × V_pesimista) + (P_base × V_base) + (P_optimista × V_optimista)
+      </div>
+      <div class="form-grid cols-3">
+        <div class="field">
+          <label>Valor — Escenario Pesimista</label>
+          <input type="number" id="fc_val_p" placeholder="500.000.000" step="1000000">
+          <span class="hint" id="fc_hint">En guaraníes (₲)</span>
+        </div>
+        <div class="field">
+          <label>Probabilidad Pesimista (%)</label>
+          <input type="number" id="fc_prob_p" value="25" step="5" placeholder="25">
+        </div>
+        <div class="field"></div>
+        <div class="field">
+          <label>Valor — Escenario Base</label>
+          <input type="number" id="fc_val_b" placeholder="2.000.000.000" step="1000000">
+        </div>
+        <div class="field">
+          <label>Probabilidad Base (%)</label>
+          <input type="number" id="fc_prob_b" value="50" step="5" placeholder="50">
+        </div>
+        <div class="field"></div>
+        <div class="field">
+          <label>Valor — Escenario Optimista</label>
+          <input type="number" id="fc_val_o" placeholder="6.000.000.000" step="1000000">
+        </div>
+        <div class="field">
+          <label>Probabilidad Optimista (%)</label>
+          <input type="number" id="fc_prob_o" value="25" step="5" placeholder="25">
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcFirstChicago()">Calcular</button>
+      <div class="result-box" id="res_firstchicago">
+        <div class="result-label">Valor Esperado Ponderado</div>
+        <div class="result-value" id="fc_total"></div>
+        <div class="result-secondary" id="fc_secondary"></div>
+        <div class="result-breakdown" id="fc_breakdown"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SUMMARY ===== -->
+  <div class="section" id="sec-summary">
+    <div class="section-header">
+      <h2>Resumen Multi-Método</h2>
+      <p>Ingrese los parámetros principales y obtenga una valuación rápida por todos los métodos simultáneamente.</p>
+    </div>
+    <div class="card">
+      <div class="card-title">Valuación Rápida Comparativa</div>
+      <div class="card-desc">Esta herramienta genera un rango de valores usando los principales métodos de valuación con los datos básicos de la empresa.</div>
+      <div class="form-grid cols-2">
+        <div class="field">
+          <label>Ingresos Anuales</label>
+          <input type="number" id="sum_revenue" placeholder="5.000.000.000" step="1000000">
+          <span class="hint" id="sum_hint">En guaraníes (₲)</span>
+        </div>
+        <div class="field">
+          <label>EBITDA Anual</label>
+          <input type="number" id="sum_ebitda" placeholder="1.000.000.000" step="1000000">
+        </div>
+        <div class="field">
+          <label>Ganancia Neta</label>
+          <input type="number" id="sum_net" placeholder="500.000.000" step="1000000">
+        </div>
+        <div class="field">
+          <label>Activos Totales</label>
+          <input type="number" id="sum_assets" placeholder="8.000.000.000" step="1000000">
+        </div>
+        <div class="field">
+          <label>Pasivos Totales</label>
+          <input type="number" id="sum_liab" placeholder="3.000.000.000" step="1000000">
+        </div>
+        <div class="field">
+          <label>WACC (%)</label>
+          <input type="number" id="sum_wacc" value="12" step="0.5">
+        </div>
+      </div>
+      <button class="btn-calc" onclick="calcSummary()">Calcular Todos los Métodos</button>
+      <div class="result-box" id="res_summary">
+        <div class="result-label">Rango de Valuación</div>
+        <div class="result-value" id="sum_range"></div>
+        <div class="result-secondary" id="sum_secondary"></div>
+        <div class="results-grid" id="sum_grid"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>Tipo de cambio BCP: <strong>1 USD = ₲ 6.453,29</strong> — Miércoles 25 de febrero de 2026 &nbsp;·&nbsp; 
+  <a href="https://www.bcp.gov.py/webapps/web/cotizacion/monedas" target="_blank">Fuente: Banco Central del Paraguay</a></p>
+  <p style="margin-top:6px; opacity:0.5;">ValorPY es una herramienta educativa. Los valores son estimaciones y no constituyen asesoramiento financiero profesional.</p>
+</footer>
+
+<script>
+// ===== STATE =====
+let currency = 'PYG';
+const BCP_RATE = 6453.29; // 1 USD = X PYG — BCP 25/02/2026
+
+function setCurrency(c) {
+  currency = c;
+  document.getElementById('btnPYG').classList.toggle('active', c === 'PYG');
+  document.getElementById('btnUSD').classList.toggle('active', c === 'USD');
+  // Update all hints
+  updateHints();
+}
+
+function updateHints() {
+  const sym = currency === 'PYG' ? '₲' : 'USD';
+  const hintIds = ['ebitda_hint','per_hint','rev_hint','bv_hint','liq_hint','ddm_hint','ev_hint','vc_hint','fc_hint','sum_hint','sc_hint'];
+  hintIds.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = `En ${sym} (${currency})`;
+  });
+}
+
+// ===== FORMAT =====
+function fmt(val) {
+  if(currency === 'PYG') {
+    return '₲ ' + Math.round(val).toLocaleString('es-PY');
+  } else {
+    const usd = val / BCP_RATE;
+    return 'USD ' + usd.toLocaleString('es-PY', {minimumFractionDigits:0, maximumFractionDigits:0});
+  }
+}
+
+function fmtBoth(valPYG_or_input) {
+  if(currency === 'PYG') {
+    const usd = valPYG_or_input / BCP_RATE;
+    return `≈ USD ${usd.toLocaleString('es-PY', {minimumFractionDigits:0, maximumFractionDigits:0})} al TC BCP`;
+  } else {
+    const pyg = valPYG_or_input * BCP_RATE;
+    return `≈ ₲ ${Math.round(pyg).toLocaleString('es-PY')} al TC BCP`;
+  }
+}
+
+function toBase(val) {
+  // All inputs are in current currency, convert to PYG for internal calcs
+  return currency === 'PYG' ? val : val * BCP_RATE;
+}
+
+function getVal(id) {
+  return parseFloat(document.getElementById(id).value) || 0;
+}
+
+function showResult(resId, mainVal, secondaryText, breakdownRows) {
+  const box = document.getElementById(resId);
+  box.classList.add('show');
+  // find children
+  box.querySelector('.result-value').textContent = fmt(mainVal);
+  box.querySelector('.result-secondary').textContent = fmtBoth(mainVal);
+  const bd = box.querySelector('.result-breakdown');
+  if(bd && breakdownRows) {
+    bd.innerHTML = breakdownRows.map(r =>
+      `<div class="breakdown-row"><span class="breakdown-key">${r[0]}</span><span class="breakdown-val">${r[1]}</span></div>`
+    ).join('');
+  }
+}
+
+// ===== TABS =====
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== DCF =====
+function renderDCFYears() {
+  const n = parseInt(document.getElementById('dcf_years').value);
+  const container = document.getElementById('dcf_year_inputs');
+  container.innerHTML = '';
+  for(let i=1; i<=n; i++) {
+    const row = document.createElement('div');
+    row.className = 'year-row';
+    row.innerHTML = `<div class="year-label">AÑO ${i}</div>
+      <div class="field" style="flex:1">
+        <input type="number" id="dcf_cf_${i}" placeholder="FCL Año ${i}" step="1000000" style="width:100%">
+      </div>`;
+    container.appendChild(row);
+  }
+}
+renderDCFYears();
+
+function calcDCF() {
+  const wacc = getVal('dcf_wacc') / 100;
+  const g = getVal('dcf_g') / 100;
+  const n = parseInt(document.getElementById('dcf_years').value);
+  if(wacc <= g) { alert('El WACC debe ser mayor que la tasa de crecimiento terminal (g).'); return; }
+  let pvSum = 0;
+  let breakdown = [];
+  let lastCF = 0;
+  for(let i=1; i<=n; i++) {
+    const cf = getVal(`dcf_cf_${i}`);
+    const pv = cf / Math.pow(1+wacc, i);
+    pvSum += pv;
+    lastCF = cf;
+    breakdown.push([`FCL Año ${i}`, fmt(cf) + ' → VP: ' + fmt(pv)]);
+  }
+  const tv = (lastCF * (1+g)) / (wacc - g);
+  const pvTV = tv / Math.pow(1+wacc, n);
+  pvSum += pvTV;
+  breakdown.push(['Valor Terminal', fmt(tv)]);
+  breakdown.push(['VP del Valor Terminal', fmt(pvTV)]);
+  breakdown.push(['Valor Total DCF', fmt(pvSum)]);
+  showResult('res_dcf', pvSum, '', breakdown);
+}
+
+// ===== EBITDA =====
+function calcEBITDA() {
+  const ebitda = getVal('ebitda_val');
+  const mult = getVal('ebitda_mult');
+  const debt = getVal('ebitda_debt');
+  const ev = ebitda * mult;
+  const equity = ev - debt;
+  showResult('res_ebitda', equity, '', [
+    ['EBITDA', fmt(ebitda)],
+    ['× Múltiplo', mult + 'x'],
+    ['Enterprise Value', fmt(ev)],
+    ['− Deuda Neta', fmt(debt)],
+    ['Valor del Equity', fmt(equity)],
+  ]);
+}
+
+// ===== P/E =====
+function calcPER() {
+  const earnings = getVal('per_earnings');
+  const per = getVal('per_ratio');
+  const shares = getVal('per_shares');
+  const value = earnings * per;
+  const rows = [
+    ['Ganancia Neta', fmt(earnings)],
+    ['× P/E Ratio', per + 'x'],
+    ['Valor de la Empresa', fmt(value)],
+  ];
+  if(shares > 0) {
+    rows.push(['Precio por Acción', fmt(value / shares)]);
+  }
+  showResult('res_per', value, '', rows);
+}
+
+// ===== REVENUE =====
+function calcRevenue() {
+  const sales = getVal('rev_sales');
+  const mult = getVal('rev_mult');
+  const margin = getVal('rev_margin');
+  const value = sales * mult;
+  const impliedEbitda = sales * (margin/100);
+  showResult('res_revenue', value, '', [
+    ['Ingresos Anuales', fmt(sales)],
+    ['× Múltiplo de Ingresos', mult + 'x'],
+    ['Valor de la Empresa', fmt(value)],
+    ['EBITDA Implícito (' + margin + '%)', fmt(impliedEbitda)],
+    ['EV/EBITDA Implícito', impliedEbitda > 0 ? (value/impliedEbitda).toFixed(1) + 'x' : 'N/A'],
+  ]);
+}
+
+// ===== BOOK VALUE =====
+function calcBookValue() {
+  const assets = getVal('bv_assets');
+  const liab = getVal('bv_liabilities');
+  const pb = getVal('bv_pb');
+  const intangibles = getVal('bv_intangibles');
+  const bookVal = assets - liab + intangibles;
+  const adjVal = bookVal * pb;
+  showResult('res_assets', adjVal, '', [
+    ['Activos Totales', fmt(assets)],
+    ['− Pasivos Totales', fmt(liab)],
+    ['+ Intangibles', fmt(intangibles)],
+    ['Valor en Libros', fmt(bookVal)],
+    ['× Precio/Book', pb + 'x'],
+    ['Valor Ajustado', fmt(adjVal)],
+  ]);
+}
+
+// ===== LIQUIDATION =====
+function calcLiquidation() {
+  const cash = getVal('liq_cash') * 1.00;
+  const ar   = getVal('liq_ar')   * 0.80;
+  const inv  = getVal('liq_inv')  * 0.50;
+  const ppe  = getVal('liq_ppe')  * 0.65;
+  const re   = getVal('liq_re')   * 0.85;
+  const liab = getVal('liq_liab');
+  const costPct = getVal('liq_cost') / 100;
+  const grossAssets = cash + ar + inv + ppe + re;
+  const liqCosts = grossAssets * costPct;
+  const netVal = grossAssets - liab - liqCosts;
+  showResult('res_liquidation', netVal, '', [
+    ['Efectivo (100%)', fmt(cash)],
+    ['Cuentas x Cobrar (80%)', fmt(ar)],
+    ['Inventarios (50%)', fmt(inv)],
+    ['Activos Fijos (65%)', fmt(ppe)],
+    ['Bienes Raíces (85%)', fmt(re)],
+    ['Activos Recuperables Brutos', fmt(grossAssets)],
+    ['− Pasivos', fmt(liab)],
+    ['− Costos de Liquidación', fmt(liqCosts)],
+    ['Valor Neto de Liquidación', fmt(netVal < 0 ? 0 : netVal)],
+  ]);
+}
+
+// ===== DDM =====
+function calcDDM() {
+  const d0 = getVal('ddm_d0');
+  const g = getVal('ddm_g') / 100;
+  const ke = getVal('ddm_ke') / 100;
+  const shares = getVal('ddm_shares');
+  if(ke <= g) { alert('El costo del equity (Ke) debe ser mayor que g.'); return; }
+  const d1 = d0 * (1 + g);
+  const value = d1 / (ke - g);
+  const rows = [
+    ['D₀ (dividendo actual)', fmt(d0)],
+    ['D₁ (dividendo proyectado)', fmt(d1)],
+    ['Ke − g', ((ke-g)*100).toFixed(2) + '%'],
+    ['Valor de la Empresa', fmt(value)],
+  ];
+  if(shares > 0) rows.push(['Precio por Acción', fmt(value / shares)]);
+  showResult('res_ddm', value, '', rows);
+}
+
+// ===== EV =====
+function calcEV() {
+  const ebitda = getVal('ev_ebitda');
+  const mult = getVal('ev_mult');
+  const debt = getVal('ev_debt');
+  const cash = getVal('ev_cash');
+  const shares = getVal('ev_shares');
+  const ev = ebitda * mult;
+  const equityVal = ev - debt + cash;
+  const rows = [
+    ['EBITDA', fmt(ebitda)],
+    ['× EV/EBITDA', mult + 'x'],
+    ['Enterprise Value', fmt(ev)],
+    ['− Deuda Total', fmt(debt)],
+    ['+ Efectivo', fmt(cash)],
+    ['Valor del Equity', fmt(equityVal)],
+  ];
+  if(shares > 0) rows.push(['Precio por Acción', fmt(equityVal / shares)]);
+  showResult('res_ev', ev, '', rows);
+  document.getElementById('ev_total').textContent = 'EV: ' + fmt(ev) + ' | Equity: ' + fmt(equityVal);
+}
+
+// ===== VC METHOD =====
+function calcVC() {
+  const revenue5 = getVal('vc_revenue');
+  const exitMult = getVal('vc_exit_mult');
+  const roi = getVal('vc_roi') / 100;
+  const years = getVal('vc_years');
+  const invest = getVal('vc_invest');
+  const terminalVal = revenue5 * exitMult;
+  const postMoneyToday = terminalVal / Math.pow(1 + roi, years);
+  const preMoneyToday = postMoneyToday - invest;
+  const ownershipPct = invest > 0 ? (invest / postMoneyToday) * 100 : 0;
+  showResult('res_vc', preMoneyToday, '', [
+    ['Valor Terminal (Año ' + years + ')', fmt(terminalVal)],
+    ['Factor de Descuento', '÷ (1+' + (roi*100).toFixed(0) + '%)^' + years + ' = ' + Math.pow(1+roi,years).toFixed(2) + 'x'],
+    ['Valor Post-Money Hoy', fmt(postMoneyToday)],
+    ['− Inversión', fmt(invest)],
+    ['Valor Pre-Money', fmt(preMoneyToday)],
+    ['Dilución del Inversor', ownershipPct.toFixed(1) + '%'],
+  ]);
+}
+
+// ===== BERKUS =====
+function calcBerkus() {
+  const scores = [
+    getVal('bk_idea'),
+    getVal('bk_proto'),
+    getVal('bk_team'),
+    getVal('bk_relations'),
+    getVal('bk_sales'),
+  ];
+  const maxUSD = getVal('bk_max');
+  const totalScore = scores.reduce((a,b)=>a+b, 0);
+  const maxScore = 100;
+  const valUSD = (totalScore / maxScore) * maxUSD;
+  const valPYG = valUSD * BCP_RATE;
+  const valDisplay = currency === 'PYG' ? valPYG : valUSD;
+  const labels = ['Idea/Concepto','Prototipo/Producto','Equipo','Relaciones Estratégicas','Ventas/Tracción'];
+  const breakdown = labels.map((l,i) => [l, scores[i] + '/20 pts → ' + fmt((scores[i]/100)*maxUSD*BCP_RATE/BCP_RATE * (currency==='PYG'?BCP_RATE:1))]);
+  breakdown.push(['Puntaje Total', totalScore + '/100 puntos']);
+  breakdown.push(['Valuación (USD ' + maxUSD + 'k máx)', 'USD ' + valUSD.toLocaleString('es-PY',{maximumFractionDigits:0}) + ' ≈ ₲ ' + Math.round(valPYG).toLocaleString('es-PY')]);
+  showResult('res_berkus', valDisplay, '', breakdown);
+}
+
+// ===== SCORECARD =====
+function calcScorecard() {
+  const base = getVal('sc_base');
+  const factors = [
+    [0.30, getVal('sc_team')],
+    [0.25, getVal('sc_market')],
+    [0.15, getVal('sc_product')],
+    [0.10, getVal('sc_comp')],
+    [0.10, getVal('sc_mkt')],
+    [0.05, getVal('sc_need')],
+    [0.05, getVal('sc_other')],
+  ];
+  const composite = factors.reduce((sum, [w, f]) => sum + w*f, 0);
+  const value = base * composite;
+  const labels = ['Equipo (30%)','Mercado (25%)','Producto (15%)','Competencia (10%)','Marketing (10%)','Inversión Adicional (5%)','Otros (5%)'];
+  const breakdown = factors.map(([w,f],i) => [labels[i], 'Factor: ' + f.toFixed(2) + ' → Contribución: ' + (w*f).toFixed(3)]);
+  breakdown.push(['Multiplicador Compuesto', composite.toFixed(3) + 'x']);
+  breakdown.push(['Valuación Ajustada', fmt(value)]);
+  showResult('res_scorecard', value, '', breakdown);
+}
+
+// ===== FIRST CHICAGO =====
+function calcFirstChicago() {
+  const vp = getVal('fc_val_p'), pp = getVal('fc_prob_p');
+  const vb = getVal('fc_val_b'), pb2 = getVal('fc_prob_b');
+  const vo = getVal('fc_val_o'), po = getVal('fc_prob_o');
+  const total = pp + pb2 + po;
+  if(Math.abs(total - 100) > 0.5) { alert(`Las probabilidades suman ${total}% — deben sumar 100%.`); return; }
+  const weighted = (vp * pp/100) + (vb * pb2/100) + (vo * po/100);
+  showResult('res_firstchicago', weighted, '', [
+    ['Pesimista: ' + fmt(vp) + ' × ' + pp + '%', fmt(vp * pp/100)],
+    ['Base: ' + fmt(vb) + ' × ' + pb2 + '%', fmt(vb * pb2/100)],
+    ['Optimista: ' + fmt(vo) + ' × ' + po + '%', fmt(vo * po/100)],
+    ['Valor Esperado Ponderado', fmt(weighted)],
+  ]);
+}
+
+// ===== SUMMARY =====
+function calcSummary() {
+  const revenue = getVal('sum_revenue');
+  const ebitda = getVal('sum_ebitda');
+  const net = getVal('sum_net');
+  const assets = getVal('sum_assets');
+  const liab = getVal('sum_liab');
+  const wacc = getVal('sum_wacc') / 100;
+  if(!revenue || !ebitda) { alert('Ingrese al menos Ingresos y EBITDA.'); return; }
+  const methods = [
+    { label: 'Múltiplo EBITDA (6x)', val: ebitda * 6 },
+    { label: 'Múltiplo EBITDA (8x)', val: ebitda * 8 },
+    { label: 'Múltiplo Ingresos (1.5x)', val: revenue * 1.5 },
+    { label: 'P/E Ratio (10x)', val: net > 0 ? net * 10 : null },
+    { label: 'EV/EBITDA (7x)', val: ebitda * 7 },
+    { label: 'Valor en Libros', val: assets > 0 ? (assets - liab) : null },
+    { label: 'DCF Simplificado', val: ebitda > 0 ? ebitda / wacc : null },
+  ].filter(m => m.val !== null && m.val > 0);
+
+  const values = methods.map(m => m.val);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const avg = values.reduce((a,b)=>a+b,0) / values.length;
+
+  const box = document.getElementById('res_summary');
+  box.classList.add('show');
+  document.getElementById('sum_range').textContent = fmt(min) + ' — ' + fmt(max);
+  document.getElementById('sum_secondary').textContent = 'Promedio: ' + fmt(avg) + ' · ' + fmtBoth(avg);
+  const grid = document.getElementById('sum_grid');
+  grid.innerHTML = methods.map(m => `
+    <div class="result-mini">
+      <div class="label">${m.label}</div>
+      <div class="val">${fmt(m.val)}</div>
+      <div class="sub">${fmtBoth(m.val)}</div>
+    </div>
+  `).join('') + `
+    <div class="result-mini" style="border-color: var(--gold-dim); background: rgba(201,168,76,0.05)">
+      <div class="label">PROMEDIO</div>
+      <div class="val">${fmt(avg)}</div>
+      <div class="sub">${fmtBoth(avg)}</div>
+    </div>
+  `;
+}
+
+// Init
+updateHints();
+</script>
 </body>
 </html>
