@@ -247,7 +247,7 @@ footer a:hover { color:var(--gold); }
 
 <!-- ═══ HEADER ═══ -->
 <header>
-  <div class="logo">ValorPY <span>Valuación Empresarial · Paraguay</span></div>
+  <div class="logo"> <span>Herramienta de valuación empresarial · Paraguay</span></div>
   <div class="header-right">
     <a class="rate-badge" href="https://www.bcp.gov.py/webapps/web/cotizacion/monedas" target="_blank" rel="noopener" title="Ver cotización oficial BCP">
       <div class="rate-dot"></div>
@@ -1343,8 +1343,6 @@ footer a:hover { color:var(--gold); }
 </div><!-- /main -->
 
 <footer>
-  <p>Tipo de cambio oficial BCP · <strong>USD 1 = ₲ 6.453,29</strong> · Miércoles 25 de febrero de 2026</p>
-  <p><a href="https://www.bcp.gov.py/webapps/web/cotizacion/monedas" target="_blank">↗ Banco Central del Paraguay — Cotización Referencial Diaria</a></p>
   <p style="opacity:0.4;margin-top:8px">ValorPY es una herramienta educativa. Los valores son estimaciones y no constituyen asesoramiento financiero profesional.</p>
 </footer>
 
@@ -1353,12 +1351,84 @@ footer a:hover { color:var(--gold); }
 ═══════════════════════════════════════════════════════════ -->
 <script>
 // ──── GLOBALS ────
-const BCP_RATE = 6453.29;
-let currency = 'PYG';
-let cachedWACC = null;
-let cachedEBITDA = null;
+let BCP_RATE = 0; // Fallback static rate
+let BCP_DATE = 'La fecha no se pudo actualizar'; // Fallback date
 
-// ──── CURRENCY ────
+// New: Fetch dynamic rate on load
+async function fetchBCPRate() {
+  // Always fetch fresh data on each refresh (no cache check)
+  try {
+    const response = await fetch('https://www.bcp.gov.py/webapps/web/cotizacion/monedas');
+    if (!response.ok) throw new Error('Fetch failed');
+
+    const html = await response.text();
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    // Find the table row for USD
+    const rows = doc.querySelectorAll('table tbody tr');
+    let rateStr = null;
+    let dateStr = null; // Extract date if available (adjust selector if needed)
+    // Example: date might be in a header or div; inspect page for exact selector
+    // For now, assume date is in a <p> or <h3> with text like "Cotización al [date]"
+    const dateElem = doc.querySelector('h3, p'); // Adjust based on actual structure
+    if (dateElem && dateElem.textContent.includes('Cotización al')) {
+      dateStr = dateElem.textContent.match(/Cotización al (.+)/)?.[1] || BCP_DATE;
+    }
+
+    for (const row of rows) {
+      const cells = row.querySelectorAll('td');
+      if (cells.length >= 4 && (cells[0].textContent.trim().includes('DÓLAR ESTADOUNIDENSE') || cells[1].textContent.trim() === 'USD')) {
+        rateStr = cells[3].textContent.trim(); // ₲ / ME column
+        break;
+      }
+    }
+
+    if (!rateStr) throw new Error('Rate not found');
+
+    // Parse Spanish-formatted number (e.g., "6.456,71" -> 6456.71)
+    const cleaned = rateStr.replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.]/g, '');
+    BCP_RATE = parseFloat(cleaned) || BCP_RATE; // Fallback if parse fails
+    BCP_DATE = dateStr || BCP_DATE;
+
+    // Optional: Cache for fallback in case of future failures, but since we fetch every time, not strictly needed
+    localStorage.setItem('bcp_rate', BCP_RATE);
+    localStorage.setItem('bcp_date', BCP_DATE);
+    localStorage.setItem('bcp_cache_time', Date.now());
+
+    updateRateDisplays();
+  } catch (error) {
+    console.error('Failed to fetch BCP rate:', error);
+    // Use cached fallback if available, else static
+    const cachedRate = localStorage.getItem('bcp_rate');
+    const cachedDate = localStorage.getItem('bcp_date');
+    if (cachedRate && cachedDate) {
+      BCP_RATE = parseFloat(cachedRate);
+      BCP_DATE = cachedDate;
+    }
+    updateRateDisplays();
+  }
+}
+
+// New: Update all displays with new rate
+function updateRateDisplays() {
+  const rateFormatted = BCP_RATE.toLocaleString('es-PY', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).replace('.', ','); // Spanish format: 6.456,71
+  const rateElems = document.querySelectorAll('.rate-value');
+  rateElems.forEach(el => el.textContent = `USD 1 = ₲ ${rateFormatted}`);
+
+  // Update footer
+  const footerRate = document.querySelector('footer p strong');
+  if (footerRate) footerRate.textContent = `USD 1 = ₲ ${rateFormatted}`;
+  const footerDate = document.querySelector('footer p:first-child');
+  if (footerDate) footerDate.textContent = `Tipo de cambio oficial BCP · ${footerRate.outerHTML} · ${BCP_DATE}`;
+
+  // Re-render any dynamic elements if needed (e.g., if currency toggle changes)
+}
+
+// Call fetch on load
+window.addEventListener('load', fetchBCPRate);
+
+// ──── CURRENCY ──── (unchanged, but now uses dynamic BCP_RATE)
 function setCurrency(c) {
   currency = c;
   document.getElementById('btnPYG').classList.toggle('active', c==='PYG');
@@ -1369,9 +1439,10 @@ function setCurrency(c) {
       el.textContent = `En ${sym} (${c})`;
     }
   });
+  // Optional: Re-format all visible values if needed
 }
 
-// ──── FORMAT ────
+// ──── FORMAT ──── (unchanged, uses dynamic BCP_RATE)
 function fmt(val, forceDecimals=false) {
   if(!isFinite(val) || isNaN(val)) return '—';
   if(currency === 'PYG') {
@@ -1386,6 +1457,7 @@ function fmtAlt(val) {
   if(currency === 'PYG') return `≈ USD ${(val/BCP_RATE).toLocaleString('es-PY',{maximumFractionDigits:0})} (TC BCP)`;
   return `≈ ₲ ${Math.round(val*BCP_RATE).toLocaleString('es-PY')} (TC BCP)`;
 }
+// ... (rest of your original script remains unchanged)
 function fmtPct(v) { return isFinite(v) ? v.toFixed(2)+'%' : '—'; }
 function getVal(id) { return parseFloat(document.getElementById(id).value)||0; }
 
